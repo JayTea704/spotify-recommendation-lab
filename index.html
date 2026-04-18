@@ -1,0 +1,1723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spotify Recommendation Engine - MIS 432 AI in Business Lab #3</title>
+    <style>
+        /* ========================================
+           GLOBAL STYLES & THEME
+           ======================================== */
+        :root {
+            --bg-primary: #191414;
+            --bg-secondary: #282828;
+            --bg-tertiary: #404040;
+            --accent-green: #1DB954;
+            --text-primary: #ffffff;
+            --text-secondary: #b3b3b3;
+            --border-color: #404040;
+            --skip-red: #e74c3c;
+            --play-yellow: #f39c12;
+            --replay-green: #1DB954;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            font-size: 16px;
+        }
+
+        /* ========================================
+           HEADER
+           ======================================== */
+        header {
+            background: linear-gradient(135deg, #1DB954 0%, #1ed760 100%);
+            padding: 3rem 2rem;
+            text-align: center;
+            margin-bottom: 0;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            color: #191414;
+            font-weight: 700;
+        }
+
+        header p {
+            font-size: 1.2rem;
+            color: #191414;
+            opacity: 0.9;
+        }
+
+        /* ========================================
+           PART 1: ARTICLE SECTION
+           ======================================== */
+        .article-section {
+            background-color: var(--bg-primary);
+            padding: 4rem 2rem;
+        }
+
+        .article-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .article-section h2 {
+            font-size: 1.8rem;
+            margin-top: 3rem;
+            margin-bottom: 1.5rem;
+            color: var(--accent-green);
+            border-bottom: 2px solid var(--accent-green);
+            padding-bottom: 0.5rem;
+        }
+
+        .article-section h3 {
+            font-size: 1.4rem;
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+
+        .article-section p {
+            margin-bottom: 1.2rem;
+            color: var(--text-secondary);
+            line-height: 1.8;
+        }
+
+        .article-section ul {
+            margin-left: 2rem;
+            margin-bottom: 1.2rem;
+            color: var(--text-secondary);
+        }
+
+        .article-section li {
+            margin-bottom: 0.8rem;
+            line-height: 1.7;
+        }
+
+        /* ========================================
+           SECTION DIVIDER
+           ======================================== */
+        .section-divider {
+            height: 3px;
+            background: linear-gradient(90deg, transparent, var(--accent-green), transparent);
+            margin: 4rem 0;
+        }
+
+        /* ========================================
+           PART 2: INTERACTIVE DEMO SECTION
+           ======================================== */
+        .demo-section {
+            background-color: var(--bg-primary);
+            padding: 3rem 2rem;
+        }
+
+        .demo-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .demo-section h2 {
+            font-size: 2rem;
+            margin-bottom: 2rem;
+            color: var(--accent-green);
+            text-align: center;
+        }
+
+        /* Spotify Connect Button */
+        .spotify-connect-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: var(--bg-secondary);
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+            border: 1px solid var(--border-color);
+        }
+
+        .connect-btn, .disconnect-btn {
+            background-color: var(--accent-green);
+            color: #191414;
+            padding: 0.8rem 1.5rem;
+            border: none;
+            border-radius: 24px;
+            font-weight: 700;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .connect-btn:hover, .disconnect-btn:hover {
+            background-color: #1ed760;
+            transform: scale(1.05);
+        }
+
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            font-size: 1rem;
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: #ff6b6b;
+        }
+
+        .status-indicator.connected {
+            background-color: var(--accent-green);
+        }
+
+        /* Main Layout */
+        .demo-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        /* Left Column: Song Catalog */
+        .catalog-column {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .catalog-column h3 {
+            font-size: 1.3rem;
+            margin-bottom: 1.5rem;
+            color: var(--text-primary);
+            border-bottom: 2px solid var(--accent-green);
+            padding-bottom: 0.5rem;
+        }
+
+        .song-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            max-height: 600px;
+            overflow-y: auto;
+            padding-right: 0.5rem;
+        }
+
+        .song-list::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .song-list::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+            border-radius: 4px;
+        }
+
+        .song-list::-webkit-scrollbar-thumb {
+            background: var(--accent-green);
+            border-radius: 4px;
+        }
+
+        .song-card {
+            background-color: var(--bg-secondary);
+            padding: 1rem;
+            border-radius: 8px;
+            border-left: 4px solid var(--border-color);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .song-card:hover {
+            background-color: var(--bg-tertiary);
+            border-left-color: var(--accent-green);
+        }
+
+        .song-card.rated {
+            border-left-color: var(--accent-green);
+        }
+
+        .song-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 0.5rem;
+        }
+
+        .song-title {
+            font-weight: 700;
+            font-size: 1rem;
+            color: var(--text-primary);
+        }
+
+        .song-artist {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.3rem;
+        }
+
+        .song-genre {
+            font-size: 0.75rem;
+            background-color: var(--bg-tertiary);
+            padding: 0.25rem 0.6rem;
+            border-radius: 12px;
+            display: inline-block;
+            color: var(--text-secondary);
+            margin-bottom: 0.8rem;
+        }
+
+        .song-status {
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            text-transform: uppercase;
+        }
+
+        .song-status.skipped {
+            background-color: rgba(231, 76, 60, 0.2);
+            color: var(--skip-red);
+        }
+
+        .song-status.played {
+            background-color: rgba(243, 156, 18, 0.2);
+            color: var(--play-yellow);
+        }
+
+        .song-status.replayed {
+            background-color: rgba(29, 185, 84, 0.2);
+            color: var(--replay-green);
+        }
+
+        .song-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn-small {
+            flex: 1;
+            padding: 0.6rem;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background-color: var(--bg-tertiary);
+            color: var(--text-primary);
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .btn-small:hover {
+            background-color: var(--accent-green);
+            color: #191414;
+            border-color: var(--accent-green);
+        }
+
+        .btn-small.skip {
+            color: var(--skip-red);
+        }
+
+        .btn-small.skip:hover {
+            background-color: var(--skip-red);
+            color: #fff;
+        }
+
+        .btn-small.play {
+            color: var(--play-yellow);
+        }
+
+        .btn-small.play:hover {
+            background-color: var(--play-yellow);
+            color: #191414;
+        }
+
+        .btn-small.replay {
+            color: var(--replay-green);
+        }
+
+        .btn-small.replay:hover {
+            background-color: var(--replay-green);
+            color: #191414;
+        }
+
+        /* Right Column: Recommendations & Data */
+        .recommendations-column {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .info-panel {
+            background-color: var(--bg-secondary);
+            padding: 1.5rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        .info-panel h4 {
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+            color: var(--accent-green);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.5rem;
+        }
+
+        .recommendation-item {
+            background-color: var(--bg-tertiary);
+            padding: 0.8rem;
+            border-radius: 6px;
+            margin-bottom: 0.8rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-left: 3px solid var(--accent-green);
+        }
+
+        .recommendation-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .recommendation-song-info {
+            flex: 1;
+        }
+
+        .recommendation-song-name {
+            font-weight: 600;
+            font-size: 0.95rem;
+            color: var(--text-primary);
+        }
+
+        .recommendation-song-artist {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .recommendation-score {
+            background-color: var(--accent-green);
+            color: #191414;
+            padding: 0.4rem 0.8rem;
+            border-radius: 4px;
+            font-weight: 700;
+            font-size: 0.85rem;
+            min-width: 50px;
+            text-align: center;
+        }
+
+        .user-similarity-list {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.8rem;
+        }
+
+        .user-card {
+            background-color: var(--bg-tertiary);
+            padding: 0.8rem;
+            border-radius: 6px;
+            text-align: center;
+            border: 1px solid var(--border-color);
+            transition: all 0.2s ease;
+        }
+
+        .user-card:hover {
+            border-color: var(--accent-green);
+            background-color: rgba(29, 185, 84, 0.1);
+        }
+
+        .user-name {
+            font-weight: 700;
+            font-size: 0.9rem;
+            color: var(--text-primary);
+            margin-bottom: 0.3rem;
+        }
+
+        .user-similarity {
+            font-size: 0.8rem;
+            color: var(--accent-green);
+        }
+
+        .stats-bar {
+            background-color: var(--bg-secondary);
+            padding: 1.5rem;
+            border-radius: 8px;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+            border: 1px solid var(--border-color);
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--accent-green);
+            display: block;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            margin-top: 0.3rem;
+        }
+
+        .data-log {
+            background-color: var(--bg-secondary);
+            padding: 1.5rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .data-log h4 {
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+            color: var(--accent-green);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.5rem;
+        }
+
+        .log-entry {
+            padding: 0.8rem;
+            border-left: 3px solid var(--border-color);
+            margin-bottom: 0.8rem;
+            font-size: 0.85rem;
+            border-radius: 4px;
+            background-color: rgba(255, 255, 255, 0.02);
+        }
+
+        .log-entry:last-child {
+            margin-bottom: 0;
+        }
+
+        .log-entry.skip {
+            border-left-color: var(--skip-red);
+        }
+
+        .log-entry.play {
+            border-left-color: var(--play-yellow);
+        }
+
+        .log-entry.replay {
+            border-left-color: var(--replay-green);
+        }
+
+        .log-timestamp {
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+        }
+
+        .log-message {
+            color: var(--text-primary);
+            margin-top: 0.3rem;
+        }
+
+        /* Wrapped Section */
+        .wrapped-section {
+            text-align: center;
+            margin-top: 3rem;
+        }
+
+        .wrapped-btn {
+            background-color: var(--accent-green);
+            color: #191414;
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 24px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .wrapped-btn:hover:not(:disabled) {
+            background-color: #1ed760;
+            transform: scale(1.05);
+        }
+
+        .wrapped-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Wrapped Overlay */
+        .wrapped-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, #1DB954 0%, #191414 100%);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            overflow-y: auto;
+            padding: 2rem;
+        }
+
+        .wrapped-overlay.active {
+            display: flex;
+        }
+
+        .wrapped-content {
+            background-color: var(--bg-secondary);
+            padding: 3rem;
+            border-radius: 12px;
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+            border: 2px solid var(--accent-green);
+        }
+
+        .wrapped-content h2 {
+            font-size: 2.5rem;
+            margin-bottom: 2rem;
+            color: var(--accent-green);
+        }
+
+        .wrapped-stat-box {
+            background-color: var(--bg-tertiary);
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            border-left: 4px solid var(--accent-green);
+        }
+
+        .wrapped-stat-box h3 {
+            font-size: 1rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        .wrapped-stat-value {
+            font-size: 1.8rem;
+            color: var(--accent-green);
+            font-weight: 700;
+        }
+
+        .wrapped-close-btn {
+            background-color: var(--accent-green);
+            color: #191414;
+            padding: 0.8rem 2rem;
+            border: none;
+            border-radius: 24px;
+            font-weight: 700;
+            cursor: pointer;
+            font-size: 1rem;
+            margin-top: 2rem;
+            transition: all 0.2s ease;
+        }
+
+        .wrapped-close-btn:hover {
+            background-color: #1ed760;
+        }
+
+        .wrapped-footer {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-top: 2rem;
+            font-style: italic;
+        }
+
+        /* Playbar */
+        .playbar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: var(--bg-secondary);
+            border-top: 1px solid var(--border-color);
+            padding: 1rem 2rem;
+            display: none;
+            flex-direction: row;
+            align-items: center;
+            gap: 1.5rem;
+            z-index: 999;
+        }
+
+        .playbar.active {
+            display: flex;
+        }
+
+        .playbar-song-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .playbar-song-name {
+            font-weight: 700;
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .playbar-song-artist {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .playbar-controls {
+            display: flex;
+            gap: 0.8rem;
+        }
+
+        .playbar-btn {
+            background-color: var(--accent-green);
+            color: #191414;
+            padding: 0.6rem 1.2rem;
+            border: none;
+            border-radius: 20px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0.9rem;
+        }
+
+        .playbar-btn:hover {
+            background-color: #1ed760;
+        }
+
+        /* Add bottom padding to body when playbar is active */
+        body.playbar-active {
+            padding-bottom: 80px;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            .demo-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .user-similarity-list {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 1.8rem;
+            }
+
+            .stats-bar {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .article-container {
+                padding: 0 1rem;
+            }
+        }
+
+        /* Utility Classes */
+        .text-center {
+            text-align: center;
+        }
+
+        .mt-3 {
+            margin-top: 3rem;
+        }
+
+        .disabled-state {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+<!-- ========================================
+     HEADER
+     ======================================== -->
+<header>
+    <h1>Spotify Recommendation Engine</h1>
+    <p>Interactive Portfolio: Understanding AI at Scale</p>
+</header>
+
+<!-- ========================================
+     PART 1: BUSINESS STORY & ANALYSIS
+     ======================================== -->
+<div class="article-section">
+    <div class="article-container">
+
+        <h2>The Business Problem</h2>
+        <p>
+            Spotify operates at an unprecedented scale: 100 million songs in its catalog and 751 million monthly active users across more than 180 countries. Yet the company faces a fundamental challenge that no smaller service has had to solve: it's impossible to show everyone the same popular songs.
+        </p>
+        <p>
+            In a world of unlimited choice, the gap between what is popular and what is personally relevant is everything. A user in Nashville might skip the Billboard #1 track in seconds. A listener in Tokyo might never discover their favorite artist because that artist has only 2,000 global streams. The long tail of music—the vast majority of catalog that has small but passionate audiences—represents both a business opportunity and a recommendation challenge.
+        </p>
+        <p>
+            Spotify's core competitive strategy depends on solving this problem: personalization at scale. The company cannot compete on catalog size alone; every major streaming service licenses the same songs. Instead, Spotify competes on understanding what each individual user wants to hear. That understanding is the moat.
+        </p>
+
+        <h2>What is a Recommendation Engine?</h2>
+        <p>
+            A recommendation engine is a system that predicts what a user will enjoy based on their past behavior and the behavior of similar users. For Spotify, this means taking 751 million users' listening histories and determining which songs each person is most likely to press play on.
+        </p>
+        <p>
+            Why does this matter for business? Because recommendations drive engagement. Every time a user discovers a song through a playlist generated for them, they:
+        </p>
+        <ul>
+            <li>Extend their listening session (more time on platform = more ad inventory or subscription value)</li>
+            <li>Generate new behavioral data (every skip, replay, and share teaches the system more)</li>
+            <li>Increase their switching costs (the better your recommendations, the harder it is to leave)</li>
+            <li>Improve artist discovery (benefiting the music industry, which improves Spotify's negotiating position)</li>
+        </ul>
+        <p>
+            For the listener, a great recommendation engine feels like the service knows their taste. For the business, it's the difference between a commodity and a defensible competitive advantage.
+        </p>
+
+        <h2>Key Concepts in Recommendation Engines</h2>
+
+        <h3>Implicit Signals</h3>
+        <p>
+            Spotify doesn't ask users to rate songs. You never see a five-star button after a track finishes. Instead, the platform observes behavior: Did you skip it? Did you replay it? How much of the song did you listen to in one session? Did you save it to a playlist?
+        </p>
+        <p>
+            This is a profound design choice. Ratings are honest, but they're also scarce. Users willingly rate maybe 1 in 500 songs they hear. Implicit signals, on the other hand, are automatic and abundant. Every skip, replay, and share tells the truth about preference better than any survey could. A skip says "not now, not for me" with no social performance involved.
+        </p>
+        <p>
+            For 751 million users, implicit signals generate far more training data than explicit ratings ever could. The behavioral signal is also more honest: you can't game a skip.
+        </p>
+
+        <h3>Feature Engineering</h3>
+        <p>
+            Raw data—the fact that user_01 skipped "Song X" at 45 seconds—is not ready for a machine learning model. That raw event has to be transformed into features: structured data that the model can learn from.
+        </p>
+        <p>
+            Feature engineering asks: What matters? Is it the skip alone, or does the time-of-day matter? Is a skip in the first 10 seconds different from a skip at 45 seconds? Should the replay count more than the play? How do we decay old signals so that recent preferences matter more than preferences from six months ago?
+        </p>
+        <p>
+            The quality of the features determines the quality of the model. A perfect algorithm with bad features will fail. A simple algorithm with great features will often succeed. Feature engineering is the unglamorous, high-impact work that separates good recommendations from great ones.
+        </p>
+
+        <h3>Collaborative Filtering</h3>
+        <p>
+            The core insight: if two users have similar taste in the past, they likely have similar taste in the future. This doesn't require understanding the music itself. It only requires finding patterns in who likes what.
+        </p>
+        <p>
+            Think of it this way: you discover a new coffee shop because a friend who has taste similar to yours recommends it. You don't need to understand coffee chemistry; you just need to know that your friend's preferences align with yours. Collaborative filtering applies that intuition at scale: find the 1,000 users most similar to you, then recommend songs they loved that you haven't heard yet.
+        </p>
+        <p>
+            This approach has a profound advantage: it works without understanding the song at all. It works for music, movies, books, and restaurants. The algorithm is format-agnostic because it only measures taste similarity.
+        </p>
+
+        <h3>Cosine Similarity</h3>
+        <p>
+            How do we measure whether two users' taste "points in the same direction"? Enter cosine similarity, a mathematical concept from linear algebra that has become fundamental to recommendation systems.
+        </p>
+        <p>
+            Imagine each user as a vector in high-dimensional space, where each dimension represents their engagement score with a song. User A who loves Pop and Hip-Hop but skips R&B has a different vector than User B who loves all three genres. Cosine similarity measures the angle between these vectors: a score of 1.0 means perfect alignment (identical taste direction), a score of 0.0 means completely orthogonal (no taste overlap), and negative scores mean opposite preferences.
+        </p>
+        <p>
+            In practice, cosine similarity lets the system answer the question: "Of all 751 million users, which 10 have taste most similar to this new listener?" in milliseconds, without understanding what any song means.
+        </p>
+
+        <h3>Unsupervised Learning & Taste Clustering</h3>
+        <p>
+            Spotify doesn't manually define listener segments like "young pop fans" or "late-night ambient chill listeners." Instead, it uses unsupervised learning algorithms to discover clusters—groups of listeners with similar taste—that emerge from the data.
+        </p>
+        <p>
+            This is powerful because the algorithm often finds segments that human product managers didn't know existed. It might discover that listeners who replay lo-fi hip-hop also tend to listen to indie folk and Scandinavian ambient music—a taste cluster no human curator would have predicted. Once discovered, those clusters become real targeting levers: "listeners who are 78% similar to the lo-fi + indie folk cluster."
+        </p>
+        <p>
+            Unsupervised clustering also handles the long tail elegantly. A listener with highly niche tastes might not fit any human-defined segment, but the algorithm will find other users just like them and provide recommendations accordingly.
+        </p>
+
+        <h3>Embeddings</h3>
+        <p>
+            Modern recommendation systems represent both users and songs as vectors in high-dimensional space—"embeddings." A song is no longer just a title and artist; it's a point in a 100-dimensional space where position encodes everything the model learned about that song's place in the taste landscape.
+        </p>
+        <p>
+            The beauty of embeddings is that similar items naturally fall close to each other in this space. The song "Blinding Lights" by The Weeknd might be close to "As It Was" by Harry Styles because they share similar characteristics in how listeners engage with them. This proximity relationship holds without the system ever "understanding" that both are pop songs.
+        </p>
+        <p>
+            Embeddings let Spotify scale beyond simple collaborative filtering. Rather than comparing exact similarity scores between millions of users, the system can find the nearest neighbors in embedding space—a much faster operation. This is how the platform goes from "recommend based on your 10 most similar users" to "recommend based on the taste landscape as a whole."
+        </p>
+
+        <h3>The Training-Serving Gap</h3>
+        <p>
+            Here's a dangerous problem that appears in almost every large-scale AI system: the data used to train a model in the lab doesn't match the data seen in production.
+        </p>
+        <p>
+            A Spotify recommendation model might be trained on data from users who have already rated 50+ songs. But in production, it has to serve new listeners with zero ratings, returning something meaningful even with no history. Or the lab dataset is balanced across all genres, but in production, Hip-Hop skew is 2x higher due to demographic shifts in the user base. Or the model is trained on 2024 data but deployed in 2025, and user behavior has changed.
+        </p>
+        <p>
+            When training data doesn't match serving data, recommendations quietly degrade. There's no crash, no error log. The system just returns worse suggestions for weeks while the performance team investigates why engagement metrics drifted down 3%.
+        </p>
+        <p>
+            This problem is why monitoring recommendation systems is critical. Not just accuracy metrics on test sets, but real-time metrics in production: Are users clicking these recommendations? Are they skipping them? Has the distribution of what we recommend shifted unexpectedly?
+        </p>
+
+        <h3>AI Governance: Why Silent Failures Matter</h3>
+        <p>
+            Most software has loud failures. A database goes down and users see an error page. A login bug is discovered through user reports. But AI systems fail silently.
+        </p>
+        <p>
+            When a recommendation engine decays, users don't see an error. They see recommendations that are slightly less relevant. Over weeks, this might reduce engagement by 2-3% without any obvious problem. By the time the organization realizes something is wrong, the performance loss compounds.
+        </p>
+        <p>
+            This is why AI governance is fundamentally a management problem, not just a technical problem. The organization needs:
+        </p>
+        <ul>
+            <li><strong>Monitoring</strong>: Real-time visibility into recommendation quality (click-through rate, skip rate, etc.)</li>
+            <li><strong>Alerting</strong>: Automated notifications when metrics drift outside expected ranges</li>
+            <li><strong>Human Oversight</strong>: A team that reviews alerts and investigates root causes</li>
+            <li><strong>Incident Response</strong>: A process to roll back bad deployments or retrain models quickly</li>
+        </ul>
+        <p>
+            Without these, AI systems can quietly harm business metrics while the organization waits weeks to notice.
+        </p>
+
+        <h3>The Data Moat</h3>
+        <p>
+            Every interaction on Spotify—every skip, replay, playlist addition, and share—is a data point. Collectively, 751 million users generate billions of signals monthly. This data flows into the recommendation engine, making it smarter.
+        </p>
+        <p>
+            Smarter recommendations increase engagement. More engagement generates more behavioral data. More data trains better models. Better models increase engagement further. This is a virtuous cycle that creates a "data moat": a competitive advantage that becomes harder to overcome the longer you're in the market.
+        </p>
+        <p>
+            A competitor could license the same algorithms or hire the same engineers. But they cannot buy 751 million users' worth of historical listening data. That data is the irreplaceable asset. The algorithm is the tool; the data is the competitive advantage.
+        </p>
+
+        <h2>Why Spotify Wrapped Costs Almost Nothing</h2>
+        <p>
+            Spotify Wrapped—the annual feature that shows each user their top songs, artists, and listening habits—has become a cultural phenomenon. Users share their Wrapped results on social media, driving organic marketing for Spotify.
+        </p>
+        <p>
+            From a technical perspective, Wrapped is a remarkable case study in data infrastructure as a business asset. Wrapped doesn't require new data collection. It doesn't require a separate machine learning pipeline. It runs on the same implicit signal data—plays, skips, replays—that already powers recommendations. It queries the same streaming infrastructure. It uses the same user-song engagement matrix.
+        </p>
+        <p>
+            The marginal cost of generating a Wrapped summary is near zero because the hard work—collecting, storing, processing billions of behavioral signals—was already done. Wrapped is a visualization and social sharing layer built on top of infrastructure that exists for recommendations.
+        </p>
+        <p>
+            This illustrates a critical business lesson: if your data infrastructure is robust and well-designed, you can build many products on top of it. Wrapped, artist analytics dashboards, playlist generation, and the recommendation engine all share the same underlying data pipeline.
+        </p>
+
+        <h2>Three Key Business Lessons</h2>
+
+        <h3>1. Your Data Infrastructure is Your Competitive Advantage</h3>
+        <p>
+            The same data pipeline that powers recommendations also enables Wrapped, artist analytics, and playlist generation. Competitors can copy your algorithms, but they can't copy your data infrastructure or the 751 million users feeding it.
+        </p>
+        <p>
+            This is why Spotify has invested so heavily in building data infrastructure, not just machine learning models. The infrastructure is the moat.
+        </p>
+
+        <h3>2. AI Systems Fail Silently, Making Governance a Leadership Responsibility</h3>
+        <p>
+            When a recommendation engine decays, there's no crash, no alert, no obvious problem. Engagement metrics drift down 2-3% over weeks. By the time leadership notices, the damage compounds.
+        </p>
+        <p>
+            This is why AI governance can't be delegated entirely to engineers. Leadership must set up monitoring, alerting, and review processes. Silent failures require proactive, human oversight.
+        </p>
+
+        <h3>3. Personalization at Scale Isn't About Better Algorithms—It's About Better Data Collection</h3>
+        <p>
+            The sophistication of a recommendation system depends on the quality and quantity of behavioral signals. A perfect algorithm with weak signals will fail. A simple algorithm with rich signals will succeed.
+        </p>
+        <p>
+            This is why Spotify tracks so much behavior: not to infringe on privacy, but because every signal (skip timing, replay patterns, playlist behavior, sharing) trains better models. The real competitive work happens in data collection, feature engineering, and signal design—not in the latest deep learning architecture.
+        </p>
+
+    </div>
+</div>
+
+<!-- ========================================
+     SECTION DIVIDER
+     ======================================== -->
+<div class="section-divider"></div>
+
+<!-- ========================================
+     PART 2: INTERACTIVE RECOMMENDATION ENGINE
+     ======================================== -->
+<div class="demo-section">
+    <div class="demo-container">
+
+        <h2>Try the Recommendation Engine</h2>
+
+        <!-- Spotify Connect Section -->
+        <div class="spotify-connect-bar">
+            <div class="connection-status">
+                <div class="status-indicator" id="statusIndicator"></div>
+                <span id="statusText">Demo Mode</span>
+            </div>
+            <button class="connect-btn" id="connectSpotifyBtn" onclick="connectSpotify()">Connect Spotify</button>
+            <button class="disconnect-btn" id="disconnectBtn" onclick="disconnectSpotify()" style="display:none;">Disconnect</button>
+        </div>
+
+        <!-- Main Demo Layout -->
+        <div class="demo-layout">
+
+            <!-- LEFT COLUMN: Song Catalog -->
+            <div class="catalog-column">
+                <h3>Your Listening History</h3>
+                <div class="song-list" id="songList"></div>
+            </div>
+
+            <!-- RIGHT COLUMN: Recommendations & Analysis -->
+            <div class="recommendations-column">
+
+                <!-- Stats Bar -->
+                <div class="stats-bar">
+                    <div class="stat">
+                        <span class="stat-value" id="statsRated">0</span>
+                        <span class="stat-label">Songs Rated</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-value" id="statsSkips">0</span>
+                        <span class="stat-label">Skips</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-value" id="statsPlays">0</span>
+                        <span class="stat-label">Plays</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-value" id="statsReplays">0</span>
+                        <span class="stat-label">Replays</span>
+                    </div>
+                </div>
+
+                <!-- Recommendations Panel -->
+                <div class="info-panel">
+                    <h4>Recommended For You</h4>
+                    <div id="recommendationsPanel">
+                        <p style="color: var(--text-secondary); text-align: center; padding: 2rem 0;">
+                            Rate 2+ songs to see personalized recommendations
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Most Similar Users -->
+                <div class="info-panel">
+                    <h4>Most Similar Users</h4>
+                    <div class="user-similarity-list" id="userSimilarityList">
+                        <p style="color: var(--text-secondary); grid-column: 1/-1; text-align: center;">
+                            Rate songs to find your taste neighbors
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Data Log -->
+                <div class="data-log">
+                    <h4>Activity Log</h4>
+                    <div id="dataLog">
+                        <p style="color: var(--text-secondary); font-size: 0.85rem;">
+                            Your interactions will appear here
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- Wrapped Section -->
+        <div class="wrapped-section">
+            <button class="wrapped-btn" id="wrappedBtn" onclick="showWrapped()" disabled>
+                Generate My Wrapped
+            </button>
+            <p style="color: var(--text-secondary); margin-top: 1rem; font-size: 0.9rem;">
+                Rate 5+ songs to unlock your personalized Wrapped summary
+            </p>
+        </div>
+
+    </div>
+</div>
+
+<!-- Wrapped Overlay -->
+<div class="wrapped-overlay" id="wrappedOverlay">
+    <div class="wrapped-content">
+        <h2>Your 2024 Wrapped</h2>
+        <div id="wrappedContent"></div>
+        <button class="wrapped-close-btn" onclick="closeWrapped()">Done</button>
+    </div>
+</div>
+
+<!-- Playbar (fixed at bottom when Spotify connected) -->
+<div class="playbar" id="playbar">
+    <div class="playbar-song-info">
+        <div class="playbar-song-name" id="playbarSongName">—</div>
+        <div class="playbar-song-artist" id="playbarSongArtist">—</div>
+    </div>
+    <div class="playbar-controls">
+        <button class="playbar-btn" id="playPauseBtn" onclick="togglePlayPause()">Play</button>
+        <button class="playbar-btn" id="stopBtn" onclick="stopPlayback()">Stop</button>
+    </div>
+</div>
+
+<!-- ========================================
+     FOOTER
+     ======================================== -->
+<footer style="background-color: var(--bg-secondary); padding: 2rem; text-align: center; border-top: 1px solid var(--border-color); color: var(--text-secondary); margin-top: 4rem;">
+    <p>
+        Completed as part of <strong>MIS 432: AI in Business</strong> at Western Washington University's College of Business and Economics
+    </p>
+    <p style="font-size: 0.9rem; margin-top: 1rem;">
+        This interactive portfolio demonstrates collaborative filtering, implicit signals, feature engineering, and AI governance at scale.
+    </p>
+</footer>
+
+<!-- ========================================
+     MAIN APPLICATION SCRIPT
+     ======================================== -->
+<script>
+// ========================================
+// PART 2: RECOMMENDATION ENGINE LOGIC
+// ========================================
+
+// Song catalog with metadata
+const songs = [
+    { id: 1, title: "Blinding Lights", artist: "The Weeknd", genre: "Pop" },
+    { id: 2, title: "HUMBLE.", artist: "Kendrick Lamar", genre: "Hip-Hop" },
+    { id: 3, title: "Levitating", artist: "Dua Lipa", genre: "Pop" },
+    { id: 4, title: "bad guy", artist: "Billie Eilish", genre: "Indie Pop" },
+    { id: 5, title: "God's Plan", artist: "Drake", genre: "Hip-Hop" },
+    { id: 6, title: "As It Was", artist: "Harry Styles", genre: "Pop" },
+    { id: 7, title: "MONTERO", artist: "Lil Nas X", genre: "Hip-Hop" },
+    { id: 8, title: "drivers license", artist: "Olivia Rodrigo", genre: "Pop" },
+    { id: 9, title: "Watermelon Sugar", artist: "Harry Styles", genre: "Pop" },
+    { id: 10, title: "Peaches", artist: "Justin Bieber", genre: "R&B" },
+    { id: 11, title: "Industry Baby", artist: "Lil Nas X", genre: "Hip-Hop" },
+    { id: 12, title: "good 4 u", artist: "Olivia Rodrigo", genre: "Pop Rock" },
+    { id: 13, title: "Leave The Door Open", artist: "Bruno Mars", genre: "R&B" },
+    { id: 14, title: "STAY", artist: "The Kid LAROI & Justin Bieber", genre: "Pop" },
+    { id: 15, title: "Heat Waves", artist: "Glass Animals", genre: "Indie" }
+];
+
+// Pre-defined user data for collaborative filtering
+// Each user has engagement scores (0.9=replay, 0.5=play, 0.1=skip, 0=not heard)
+const predefinedUsers = {
+    user_01: { "Blinding Lights": 0.9, "HUMBLE.": 0.1, "Levitating": 0.9, "bad guy": 0.1, "God's Plan": 0.1, "As It Was": 0.9, "MONTERO": 0.5, "drivers license": 0.9, "Watermelon Sugar": 0.9, "Peaches": 0.1, "Industry Baby": 0.1, "good 4 u": 0.5, "Leave The Door Open": 0.1, "STAY": 0.9, "Heat Waves": 0.5 },
+    user_02: { "Blinding Lights": 0.9, "HUMBLE.": 0.1, "Levitating": 0.9, "bad guy": 0.5, "God's Plan": 0.1, "As It Was": 0.5, "MONTERO": 0.1, "drivers license": 0.9, "Watermelon Sugar": 0.9, "Peaches": 0.9, "Industry Baby": 0.1, "good 4 u": 0.1, "Leave The Door Open": 0.1, "STAY": 0.5, "Heat Waves": 0.5 },
+    user_03: { "Blinding Lights": 0.1, "HUMBLE.": 0.9, "Levitating": 0.1, "bad guy": 0.9, "God's Plan": 0.9, "As It Was": 0.1, "MONTERO": 0.5, "drivers license": 0.1, "Watermelon Sugar": 0.5, "Peaches": 0.5, "Industry Baby": 0.9, "good 4 u": 0.1, "Leave The Door Open": 0.1, "STAY": 0.1, "Heat Waves": 0.1 },
+    user_04: { "Blinding Lights": 0.1, "HUMBLE.": 0.9, "Levitating": 0.1, "bad guy": 0.5, "God's Plan": 0.9, "As It Was": 0.5, "MONTERO": 0.9, "drivers license": 0.1, "Watermelon Sugar": 0.9, "Peaches": 0.1, "Industry Baby": 0.9, "good 4 u": 0.1, "Leave The Door Open": 0.1, "STAY": 0.1, "Heat Waves": 0.5 },
+    user_05: { "Blinding Lights": 0.9, "HUMBLE.": 0.5, "Levitating": 0.5, "bad guy": 0.5, "God's Plan": 0.9, "As It Was": 0.9, "MONTERO": 0.1, "drivers license": 0.1, "Watermelon Sugar": 0.5, "Peaches": 0.9, "Industry Baby": 0.1, "good 4 u": 0.5, "Leave The Door Open": 0.5, "STAY": 0.5, "Heat Waves": 0.5 },
+    user_06: { "Blinding Lights": 0.9, "HUMBLE.": 0.5, "Levitating": 0.9, "bad guy": 0.1, "God's Plan": 0.1, "As It Was": 0.9, "MONTERO": 0.1, "drivers license": 0.9, "Watermelon Sugar": 0.5, "Peaches": 0.9, "Industry Baby": 0.1, "good 4 u": 0.9, "Leave The Door Open": 0.9, "STAY": 0.9, "Heat Waves": 0.1 },
+    user_07: { "Blinding Lights": 0.1, "HUMBLE.": 0.5, "Levitating": 0.9, "bad guy": 0.9, "God's Plan": 0.1, "As It Was": 0.5, "MONTERO": 0.9, "drivers license": 0.5, "Watermelon Sugar": 0.9, "Peaches": 0.5, "Industry Baby": 0.1, "good 4 u": 0.5, "Leave The Door Open": 0.1, "STAY": 0.5, "Heat Waves": 0.9 },
+    user_08: { "Blinding Lights": 0.9, "HUMBLE.": 0.1, "Levitating": 0.9, "bad guy": 0.5, "God's Plan": 0.9, "As It Was": 0.5, "MONTERO": 0.1, "drivers license": 0.9, "Watermelon Sugar": 0.9, "Peaches": 0.9, "Industry Baby": 0.9, "good 4 u": 0.9, "Leave The Door Open": 0.5, "STAY": 0.9, "Heat Waves": 0.1 },
+    user_09: { "Blinding Lights": 0.9, "HUMBLE.": 0.9, "Levitating": 0.9, "bad guy": 0.1, "God's Plan": 0.9, "As It Was": 0.5, "MONTERO": 0.9, "drivers license": 0.9, "Watermelon Sugar": 0.9, "Peaches": 0.5, "Industry Baby": 0.9, "good 4 u": 0.1, "Leave The Door Open": 0.5, "STAY": 0.9, "Heat Waves": 0.1 }
+};
+
+// Application state
+let currentUserRatings = {}; // { "songTitle": 0.9 (replay) or 0.5 (play) or 0.1 (skip) }
+let activityLog = [];
+let spotifyAccessToken = null;
+let spotifyDeviceId = null;
+let currentPlayingSongId = null;
+let isPlaying = false;
+
+// Engagement values
+const ENGAGEMENT = {
+    SKIP: 0.1,
+    PLAY: 0.5,
+    REPLAY: 0.9
+};
+
+// ========================================
+// COSINE SIMILARITY FUNCTION
+// ========================================
+// This function measures how similar two users' taste vectors are.
+// Returns a value between -1 and 1, where 1 = identical taste direction
+function cosineSimilarity(vectorA, vectorB, allSongs) {
+    let dotProduct = 0;
+    let magnitudeA = 0;
+    let magnitudeB = 0;
+
+    allSongs.forEach(song => {
+        const a = vectorA[song.title] || 0;
+        const b = vectorB[song.title] || 0;
+
+        dotProduct += a * b;
+        magnitudeA += a * a;
+        magnitudeB += b * b;
+    });
+
+    magnitudeA = Math.sqrt(magnitudeA);
+    magnitudeB = Math.sqrt(magnitudeB);
+
+    if (magnitudeA === 0 || magnitudeB === 0) return 0;
+    return dotProduct / (magnitudeA * magnitudeB);
+}
+
+// ========================================
+// COLLABORATIVE FILTERING RECOMMENDATION
+// ========================================
+// Algorithm:
+// 1. Compare current user's taste vector with all predefined users
+// 2. Find top 3 most similar users (using cosine similarity)
+// 3. For songs current user hasn't heard, compute weighted average of similar users' scores
+// 4. Weight by similarity score so more similar users have more influence
+// 5. Return top 5 predicted songs
+function generateRecommendations(userRatings, allSongs) {
+    if (Object.keys(userRatings).length < 2) {
+        return [];
+    }
+
+    // Step 1: Calculate similarity with all predefined users
+    const similarities = {};
+    Object.entries(predefinedUsers).forEach(([userId, userData]) => {
+        similarities[userId] = cosineSimilarity(userRatings, userData, allSongs);
+    });
+
+    // Step 2: Get top 3 most similar users
+    const topSimilarUsers = Object.entries(similarities)
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, 3)
+        .map(([userId, sim]) => ({ userId, similarity: sim }));
+
+    // If no similarity found, return empty
+    if (topSimilarUsers.length === 0 || topSimilarUsers[0].similarity <= 0) {
+        return [];
+    }
+
+    // Step 3: Generate predictions for unheard songs
+    const predictions = {};
+    allSongs.forEach(song => {
+        if (!userRatings[song.title]) { // Only predict for unheard songs
+            let weightedScore = 0;
+            let totalWeight = 0;
+
+            topSimilarUsers.forEach(({ userId, similarity }) => {
+                const similarUserScore = predefinedUsers[userId][song.title] || 0;
+                const weight = Math.max(0, similarity); // Only positive similarities
+
+                weightedScore += similarUserScore * weight;
+                totalWeight += weight;
+            });
+
+            if (totalWeight > 0) {
+                predictions[song.title] = weightedScore / totalWeight;
+            }
+        }
+    });
+
+    // Step 4: Return top 5 by predicted score
+    return Object.entries(predictions)
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, 5)
+        .map(([title, score]) => ({ title, score }));
+}
+
+// ========================================
+// UI RENDERING FUNCTIONS
+// ========================================
+
+function renderSongCatalog() {
+    const songList = document.getElementById('songList');
+    songList.innerHTML = '';
+
+    songs.forEach(song => {
+        const isRated = currentUserRatings[song.title];
+        const cardDiv = document.createElement('div');
+        cardDiv.className = `song-card ${isRated ? 'rated' : ''}`;
+
+        let statusBadge = '';
+        let statusClass = '';
+        if (isRated === ENGAGEMENT.SKIP) {
+            statusBadge = '<span class="song-status skipped">SKIPPED</span>';
+            statusClass = 'skipped';
+        } else if (isRated === ENGAGEMENT.PLAY) {
+            statusBadge = '<span class="song-status played">PLAYED</span>';
+            statusClass = 'played';
+        } else if (isRated === ENGAGEMENT.REPLAY) {
+            statusBadge = '<span class="song-status replayed">REPLAYED</span>';
+            statusClass = 'replayed';
+        }
+
+        cardDiv.innerHTML = `
+            <div class="song-header">
+                <div>
+                    <div class="song-title">${song.title}</div>
+                    <div class="song-artist">${song.artist}</div>
+                    <span class="song-genre">${song.genre}</span>
+                </div>
+                ${statusBadge}
+            </div>
+            <div class="song-buttons">
+                <button class="btn-small skip" onclick="rateSong(${song.id}, ${ENGAGEMENT.SKIP})">Skip</button>
+                <button class="btn-small play" onclick="rateSong(${song.id}, ${ENGAGEMENT.PLAY})">Play</button>
+                <button class="btn-small replay" onclick="rateSong(${song.id}, ${ENGAGEMENT.REPLAY})">Replay</button>
+            </div>
+        `;
+
+        songList.appendChild(cardDiv);
+    });
+}
+
+function updateStats() {
+    const ratedCount = Object.keys(currentUserRatings).length;
+    const skips = Object.values(currentUserRatings).filter(v => v === ENGAGEMENT.SKIP).length;
+    const plays = Object.values(currentUserRatings).filter(v => v === ENGAGEMENT.PLAY).length;
+    const replays = Object.values(currentUserRatings).filter(v => v === ENGAGEMENT.REPLAY).length;
+
+    document.getElementById('statsRated').textContent = ratedCount;
+    document.getElementById('statsSkips').textContent = skips;
+    document.getElementById('statsPlays').textContent = plays;
+    document.getElementById('statsReplays').textContent = replays;
+}
+
+function renderRecommendations() {
+    const panel = document.getElementById('recommendationsPanel');
+    const ratedCount = Object.keys(currentUserRatings).length;
+
+    if (ratedCount < 2) {
+        panel.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 2rem 0;">Rate 2+ songs to see personalized recommendations</p>';
+        return;
+    }
+
+    const recommendations = generateRecommendations(currentUserRatings, songs);
+
+    if (recommendations.length === 0) {
+        panel.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 2rem 0;">No recommendations yet. Keep rating more songs!</p>';
+        return;
+    }
+
+    panel.innerHTML = recommendations.map(rec => `
+        <div class="recommendation-item">
+            <div class="recommendation-song-info">
+                <div class="recommendation-song-name">${rec.title}</div>
+                <div class="recommendation-song-artist">${songs.find(s => s.title === rec.title)?.artist}</div>
+            </div>
+            <div class="recommendation-score">${(rec.score * 100).toFixed(0)}%</div>
+        </div>
+    `).join('');
+}
+
+function renderUserSimilarity() {
+    const container = document.getElementById('userSimilarityList');
+    const ratedCount = Object.keys(currentUserRatings).length;
+
+    if (ratedCount === 0) {
+        container.innerHTML = '<p style="color: var(--text-secondary); grid-column: 1/-1; text-align: center;">Rate songs to find your taste neighbors</p>';
+        return;
+    }
+
+    // Calculate similarity with each predefined user
+    const similarities = {};
+    Object.entries(predefinedUsers).forEach(([userId, userData]) => {
+        similarities[userId] = cosineSimilarity(currentUserRatings, userData, songs);
+    });
+
+    // Sort by similarity and display
+    const sorted = Object.entries(similarities)
+        .sort(([, a], [, b]) => b - a)
+        .map(([userId, sim]) => ({
+            userId: userId.replace('user_', 'User '),
+            similarity: Math.max(0, sim)
+        }));
+
+    container.innerHTML = sorted.map(user => `
+        <div class="user-card">
+            <div class="user-name">${user.userId}</div>
+            <div class="user-similarity">${(user.similarity * 100).toFixed(0)}% match</div>
+        </div>
+    `).join('');
+}
+
+function renderActivityLog() {
+    const logDiv = document.getElementById('dataLog');
+
+    if (activityLog.length === 0) {
+        logDiv.innerHTML = '<p style="color: var(--text-secondary); font-size: 0.85rem;">Your interactions will appear here</p>';
+        return;
+    }
+
+    // Show most recent entries at the top (reverse order)
+    const recentEntries = activityLog.slice().reverse().slice(0, 15);
+
+    logDiv.innerHTML = recentEntries.map(entry => {
+        const timestamp = new Date(entry.timestamp).toLocaleTimeString();
+        return `
+            <div class="log-entry ${entry.action.toLowerCase()}">
+                <div class="log-timestamp">${timestamp}</div>
+                <div class="log-message">${entry.message}</div>
+            </div>
+        `;
+    }).join('');
+}
+
+// ========================================
+// INTERACTION HANDLERS
+// ========================================
+
+function rateSong(songId, engagement) {
+    const song = songs.find(s => s.id === songId);
+    if (!song) return;
+
+    currentUserRatings[song.title] = engagement;
+
+    // Add to activity log
+    const actionNames = {
+        [ENGAGEMENT.SKIP]: 'Skipped',
+        [ENGAGEMENT.PLAY]: 'Played',
+        [ENGAGEMENT.REPLAY]: 'Replayed'
+    };
+
+    activityLog.push({
+        timestamp: new Date(),
+        action: actionNames[engagement],
+        message: `${actionNames[engagement]} "${song.title}" by ${song.artist}`
+    });
+
+    // Update UI
+    renderSongCatalog();
+    updateStats();
+    renderRecommendations();
+    renderUserSimilarity();
+    renderActivityLog();
+
+    // Update Wrapped button state
+    const ratedCount = Object.keys(currentUserRatings).length;
+    document.getElementById('wrappedBtn').disabled = ratedCount < 5;
+
+    // Trigger Spotify play if connected
+    if (engagement === ENGAGEMENT.PLAY || engagement === ENGAGEMENT.REPLAY) {
+        if (spotifyAccessToken) {
+            searchAndPlaySong(song);
+        }
+    }
+}
+
+// ========================================
+// WRAPPED FEATURE
+// ========================================
+
+function showWrapped() {
+    const ratedCount = Object.keys(currentUserRatings).length;
+    if (ratedCount < 5) return;
+
+    // Get top 3 songs
+    const sortedSongs = Object.entries(currentUserRatings)
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, 3);
+
+    // Get top artist
+    const artistCounts = {};
+    sortedSongs.forEach(([songTitle]) => {
+        const song = songs.find(s => s.title === songTitle);
+        if (song) {
+            artistCounts[song.artist] = (artistCounts[song.artist] || 0) + 1;
+        }
+    });
+    const topArtist = Object.entries(artistCounts)
+        .sort(([, a], [, b]) => b - a)[0]?.[0] || 'Various Artists';
+
+    // Get top genre
+    const genreCounts = {};
+    Object.entries(currentUserRatings).forEach(([songTitle]) => {
+        const song = songs.find(s => s.title === songTitle);
+        if (song) {
+            genreCounts[song.genre] = (genreCounts[song.genre] || 0) + 1;
+        }
+    });
+    const topGenre = Object.entries(genreCounts)
+        .sort(([, a], [, b]) => b - a)[0]?.[0] || 'Pop';
+
+    // Calculate stats
+    const totalInteractions = ratedCount;
+    const replayRate = ((Object.values(currentUserRatings).filter(v => v === ENGAGEMENT.REPLAY).length / totalInteractions) * 100).toFixed(0);
+    const percentile = Math.floor(Math.random() * 30) + 60; // Random 60-90%
+
+    // Build Wrapped content
+    const topSongsHtml = sortedSongs.map(([title], idx) => {
+        const song = songs.find(s => s.title === title);
+        return `
+            <div class="wrapped-stat-box">
+                <h3>#${idx + 1} Song</h3>
+                <div class="wrapped-stat-value">"${title}"</div>
+                <div style="font-size: 0.9rem; color: var(--text-secondary); margin-top: 0.5rem;">${song.artist}</div>
+            </div>
+        `;
+    }).join('');
+
+    const wrappedHtml = `
+        ${topSongsHtml}
+        <div class="wrapped-stat-box">
+            <h3>Top Artist</h3>
+            <div class="wrapped-stat-value">${topArtist}</div>
+        </div>
+        <div class="wrapped-stat-box">
+            <h3>Top Genre</h3>
+            <div class="wrapped-stat-value">${topGenre}</div>
+        </div>
+        <div class="wrapped-stat-box">
+            <h3>Total Interactions</h3>
+            <div class="wrapped-stat-value">${totalInteractions}</div>
+        </div>
+        <div class="wrapped-stat-box">
+            <h3>Replay Rate</h3>
+            <div class="wrapped-stat-value">${replayRate}%</div>
+        </div>
+        <div class="wrapped-stat-box">
+            <h3>You're in the top ${percentile}% of ${topArtist} listeners</h3>
+        </div>
+        <div class="wrapped-footer">
+            This Wrapped was generated from the exact same data log that powered your recommendations above. No separate data collection required.
+        </div>
+    `;
+
+    document.getElementById('wrappedContent').innerHTML = wrappedHtml;
+    document.getElementById('wrappedOverlay').classList.add('active');
+}
+
+function closeWrapped() {
+    document.getElementById('wrappedOverlay').classList.remove('active');
+}
+
+// ========================================
+// SPOTIFY INTEGRATION
+// ========================================
+
+async function connectSpotify() {
+    const clientId = 'b586d81f528c4bc29c12141188543ec1';
+    const redirectUri = window.location.href.split('#')[0].split('?')[0];
+    const scopes = 'streaming user-read-email user-read-private';
+
+    // PKCE code verifier and challenge
+    // The verifier is a random string; the challenge is its SHA-256 hash.
+    // We store the verifier so we can send it back when exchanging the
+    // authorization code for an access token after the redirect.
+    const codeVerifier = generateRandomString(128);
+    const codeChallenge = await generateCodeChallenge(codeVerifier);
+
+    // Persist the code verifier across the OAuth redirect using a cookie,
+    // since JavaScript variables are lost when the page reloads.
+    document.cookie = `spotify_pkce_verifier=${codeVerifier};path=/;max-age=600;SameSite=Lax`;
+
+    const authUrl = `https://accounts.spotify.com/authorize?` +
+        `client_id=${clientId}&` +
+        `response_type=code&` +
+        `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+        `scope=${encodeURIComponent(scopes)}&` +
+        `code_challenge_method=S256&` +
+        `code_challenge=${codeChallenge}`;
+
+    window.location.href = authUrl;
+}
+
+function disconnectSpotify() {
+    spotifyAccessToken = null;
+    spotifyDeviceId = null;
+    currentPlayingSongId = null;
+    isPlaying = false;
+
+    document.getElementById('statusIndicator').classList.remove('connected');
+    document.getElementById('statusText').textContent = 'Demo Mode';
+    document.getElementById('connectSpotifyBtn').style.display = 'inline-block';
+    document.getElementById('disconnectBtn').style.display = 'none';
+    document.getElementById('playbar').classList.remove('active');
+    document.body.classList.remove('playbar-active');
+}
+
+function generateRandomString(length) {
+    const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
+    let text = '';
+    for (let i = 0; i < length; i++) {
+        text += possible.charAt(Math.floor(Math.random() * possible.length));
+    }
+    return text;
+}
+
+function generateCodeChallenge(codeVerifier) {
+    const buffer = new TextEncoder().encode(codeVerifier);
+    return crypto.subtle.digest('SHA-256', buffer).then(hash => {
+        return btoa(String.fromCharCode.apply(null, new Uint8Array(hash)))
+            .replace(/\+/g, '-')
+            .replace(/\//g, '_')
+            .replace(/=/g, '');
+    }).catch(() => {
+        // Fallback if crypto is not available
+        return codeVerifier;
+    });
+}
+
+function exchangeAuthCode(code) {
+    const clientId = 'b586d81f528c4bc29c12141188543ec1';
+    const redirectUri = window.location.href.split('#')[0].split('?')[0];
+
+    // Retrieve the PKCE code verifier from the cookie we set before
+    // the OAuth redirect. This proves to Spotify that we are the same
+    // application that initiated the login.
+    const codeVerifier = (document.cookie.match(/spotify_pkce_verifier=([^;]+)/) || [])[1];
+    if (!codeVerifier) {
+        console.error('PKCE verifier not found — cannot complete login.');
+        return;
+    }
+    // Clean up the cookie.
+    document.cookie = 'spotify_pkce_verifier=;path=/;max-age=0';
+
+    fetch('https://accounts.spotify.com/api/token', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+            client_id: clientId,
+            grant_type: 'authorization_code',
+            code: code,
+            redirect_uri: redirectUri,
+            code_verifier: codeVerifier
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        spotifyAccessToken = data.access_token;
+        initializeSpotifyPlayback();
+        updateConnectionStatus();
+    })
+    .catch(error => console.error('Error exchanging auth code:', error));
+}
+
+function initializeSpotifyPlayback() {
+    // The Spotify Web Playback SDK calls a global callback when it's
+    // ready — it does NOT fire the script's onload event reliably.
+    window.onSpotifyWebPlaybackSDKReady = () => {
+        const player = new window.Spotify.Player({
+            name: 'MIS 432 Recommendation Engine',
+            getOAuthToken: callback => callback(spotifyAccessToken),
+            volume: 0.5,
+        });
+
+        // When the player is ready, store the device ID so we can
+        // route playback to this browser tab via the Spotify API.
+        player.addListener('ready', ({ device_id }) => {
+            spotifyDeviceId = device_id;
+            console.log('Spotify player ready, device:', device_id);
+        });
+
+        player.addListener('not_ready', ({ device_id }) => {
+            console.log('Spotify device went offline:', device_id);
+        });
+
+        player.connect();
+        window.spotifyPlayer = player;
+    };
+
+    // Load the SDK script (triggers the callback above once loaded).
+    if (!document.querySelector('script[src*="spotify-player"]')) {
+        const script = document.createElement('script');
+        script.src = 'https://sdk.scdn.co/spotify-player.js';
+        document.head.appendChild(script);
+    }
+}
+
+function searchAndPlaySong(song) {
+    if (!spotifyAccessToken || !spotifyDeviceId) return;
+
+    // Search the Spotify catalog for the song by title and artist.
+    const query = encodeURIComponent(`${song.title} ${song.artist}`);
+
+    fetch(`https://api.spotify.com/v1/search?q=${query}&type=track&limit=1`, {
+        headers: { 'Authorization': `Bearer ${spotifyAccessToken}` }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.tracks && data.tracks.items.length > 0) {
+            const track = data.tracks.items[0];
+            currentPlayingSongId = track.id;
+
+            // Tell Spotify to start playing this track on our SDK device.
+            return fetch(`https://api.spotify.com/v1/me/player/play?device_id=${spotifyDeviceId}`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${spotifyAccessToken}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ uris: [track.uri] }),
+            }).then(() => {
+                // Update the playbar at the bottom of the page.
+                document.getElementById('playbarSongName').textContent = track.name;
+                document.getElementById('playbarSongArtist').textContent = track.artists[0].name;
+                document.getElementById('playbar').classList.add('active');
+                document.body.classList.add('playbar-active');
+                document.getElementById('playPauseBtn').textContent = 'Pause';
+                isPlaying = true;
+            });
+        }
+    })
+    .catch(error => console.error('Error searching/playing song:', error));
+}
+
+function togglePlayPause() {
+    // If the Spotify SDK player is available, use it to pause/resume.
+    // Otherwise just toggle the UI state for demo mode.
+    const player = window.spotifyPlayer;
+    if (isPlaying) {
+        if (player) player.pause();
+        isPlaying = false;
+        document.getElementById('playPauseBtn').textContent = 'Play';
+    } else {
+        if (player) player.resume();
+        isPlaying = true;
+        document.getElementById('playPauseBtn').textContent = 'Pause';
+    }
+}
+
+function stopPlayback() {
+    const player = window.spotifyPlayer;
+    if (player) player.pause();
+    isPlaying = false;
+    currentPlayingSongId = null;
+    document.getElementById('playbar').classList.remove('active');
+    document.body.classList.remove('playbar-active');
+    document.getElementById('playPauseBtn').textContent = 'Play';
+}
+
+function updateConnectionStatus() {
+    if (spotifyAccessToken) {
+        document.getElementById('statusIndicator').classList.add('connected');
+        document.getElementById('statusText').textContent = 'Spotify Connected';
+        document.getElementById('connectSpotifyBtn').style.display = 'none';
+        document.getElementById('disconnectBtn').style.display = 'inline-block';
+    } else {
+        document.getElementById('statusIndicator').classList.remove('connected');
+        document.getElementById('statusText').textContent = 'Demo Mode';
+        document.getElementById('connectSpotifyBtn').style.display = 'inline-block';
+        document.getElementById('disconnectBtn').style.display = 'none';
+    }
+}
+
+// ========================================
+// INITIALIZATION
+// ========================================
+
+function init() {
+    // Check for OAuth callback
+    const params = new URLSearchParams(window.location.search);
+    const authCode = params.get('code');
+
+    if (authCode) {
+        exchangeAuthCode(authCode);
+        // Clean up URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+
+    // Render initial UI
+    renderSongCatalog();
+    updateStats();
+    updateConnectionStatus();
+}
+
+// Start the application
+document.addEventListener('DOMContentLoaded', init);
+</script>
+
+</body>
+</html>
